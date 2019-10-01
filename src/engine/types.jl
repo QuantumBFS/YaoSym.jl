@@ -14,7 +14,7 @@ get_expr(x) = term(x).ex
 function track(f, x::T, xs::T...) where {T <: SymbolicType}
     ex = Expr(:call, f, map(get_expr, (x, xs...))...)
     t = Term(ex)
-    return T(simplify(t))
+    return T(t)
 end
 
 track(f, xs...) = track(f, promote(xs...)...)
