@@ -3,5 +3,5 @@
 *.jl.mem
 .DS_Store
 /dev/
-Manifest.toml
+# Manifest.toml
 .vscode
