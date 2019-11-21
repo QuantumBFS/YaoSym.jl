@@ -7,5 +7,6 @@ end
 
 @testset "partial_tr" begin
     @vars α β
-    @test α * ket"101" + β * ket"111" |> partial_tr(2:3) == (α + β) * ket"1"
+    r = α * ket"101" + β * ket"111"
+    @test partial_tr(r, 2:3) == (α + β) * ket"1"
 end
