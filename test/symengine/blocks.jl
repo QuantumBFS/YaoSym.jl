@@ -30,3 +30,14 @@ using Test
     @test pswap(4,2,1,θ) == pswap(2,1,θ)(4)
     @test pswap(4,2,1,θ) isa PSwap{4,Basic}
 end
+
+@testset "sub" begin
+    @vars θ ϕ
+    @test subs(Float64, Rx(θ), θ=>0.5) == Rx(0.5)
+    @test subs(Float64, shift(θ), θ=>0.5) == shift(0.5)
+    @test subs(Float64, phase(θ), θ=>0.5) == phase(0.5)
+    #@test subs(Float64, chain(control(2,1,2=>shift(θ)), put(2,1=>chain(Rx(θ), kron(Rx(θ))))), θ=>0.5) ==
+        #chain(control(2,1,2=>shift(0.5)), put(2,1=>chain(Rx(0.5), kron(Rx(0.5)))))
+    @test subs(Float64, time_evolve(X, θ), θ=>0.5) == time_evolve(X, 0.5)
+    @test subs(Rx(θ), θ=>ϕ) == Rx(ϕ)
+end

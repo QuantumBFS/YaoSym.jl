@@ -27,3 +27,23 @@ YaoBlocks.PSwap{N}(locs::Tuple{Int, Int}, θ::SymReal) where N = YaoBlocks.PutBl
 
 YaoBlocks.pswap(n::Int, i::Int, j::Int, α::SymReal) = PSwap{n}((i,j), α)
 YaoBlocks.pswap(i::Int, j::Int, α::SymReal) = n->pswap(n,i,j,α)
+
+export subs, chiparam
+chiparam(blk::RotationGate, param) = rot(blk.block, param)
+chiparam(blk::ShiftGate, param) = shift(param)
+chiparam(blk::PhaseGate, param) = phase(param)
+chiparam(blk::TimeEvolution, param) = time_evolve(blk.H, param, tol=blk.tol)
+chiparam(blk::AbstractBlock, params...) = niparams(blk) == length(params) == 0 ? blk : NotImplementedError(chiparam, blk, params...)
+SymEngine.subs(blk::AbstractBlock, args...; kwargs...) = subs(Basic, blk, args...; kwargs...)
+SymEngine.subs(::Type{T}, blk::RotationGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
+SymEngine.subs(::Type{T}, blk::ShiftGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
+SymEngine.subs(::Type{T}, blk::ShiftGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
+SymEngine.subs(::Type{T}, blk::TimeEvolution, args...; kwargs...) where T = time_evolve(blk.H, T(subs(blk.dt, args...; kwargs...)), tol=blk.tol)
+function SymEngine.subs(c::AbstractBlock, args...; kwargs...)
+    nparameters(c) == 0 && return c
+    if niparams(c) == 0
+        chsubblocks(c, [subs(blk, args..., kwargs...) for blk in subblocks(blk)])
+    else
+        throw(NotImplementedError(:subs, (c, args...)))
+    end
+end
