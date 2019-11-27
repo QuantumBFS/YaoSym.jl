@@ -7,6 +7,9 @@ const BiVarOp = Union{[SymEngine.BasicType{Val{i}} for i in op_types]...}
 export smat, @vars
 smat(block::AbstractBlock) = mat(Basic, block)
 
+simag = SymFunction("Im")
+sreal = SymFunction("Re")
+
 Base.promote_rule(::Type{Bool}, ::Type{Basic}) = Basic
 Base.conj(x::Basic) = Basic(conj(SymEngine.BasicType(x)))
 Base.conj(x::BasicType) = real(x) - im*imag(x)
@@ -32,6 +35,24 @@ function Base.imag(x::BasicType{Val{:Mul}})
     #return res
 end
 
+function Base.real(x::BasicType{Val{:Pow}})
+    a, b = get_args(x.x)
+    if imag(a) == 0 && imag(b) == 0
+        return x.x
+    else
+        return sreal(x.x)
+    end
+end
+
+function Base.imag(x::BasicType{Val{:Pow}})
+    a, b = get_args(x.x)
+    if imag(a) == 0 && imag(b) == 0
+        return Basic(0)
+    else
+        return simag(x.x)
+    end
+end
+
 function Base.real(x::BasicType{Val{:Mul}})
     args = (get_args(x.x)...,)
     get_mul_real(args)
@@ -44,7 +65,7 @@ function get_mul_imag(args::NTuple{N,Any}) where N
 end
 get_mul_imag(args::Tuple{Basic}) = imag(args[1])
 
-function get_mul_real(args::Tuple{N,Any}) where N
+function get_mul_real(args::NTuple{N,Any}) where N
     real(args[1])*get_mul_real(args[2:end]) - imag(args[1])*get_mul_imag(args[2:end])
 end
 get_mul_real(args::Tuple{Basic}) = real(args[1])
@@ -54,7 +75,7 @@ function Base.real(x::BasicTrigFunction)
     if imag(a) == 0
         return x.x
     else
-        error("The imag of triangular function $(typeof(x)) with complex argument is not yet implemented!")
+        return sreal(x.x)
     end
 end
 
@@ -63,7 +84,7 @@ function Base.imag(x::BasicTrigFunction)
     if imag(a) == 0
         return Basic(0)
     else
-        error("The imag of triangular function $(typeof(x)) with complex argument is not yet implemented!")
+        return simag(x.x)
     end
 end
 
@@ -102,22 +123,15 @@ YaoBlocks.PSwap{N}(locs::Tuple{Int, Int}, θ::SymReal) where N = YaoBlocks.PutBl
 YaoBlocks.pswap(n::Int, i::Int, j::Int, α::SymReal) = PSwap{n}((i,j), α)
 YaoBlocks.pswap(i::Int, j::Int, α::SymReal) = n->pswap(n,i,j,α)
 
-export subs, chiparam
-chiparam(blk::RotationGate, param) = rot(blk.block, param)
-chiparam(blk::ShiftGate, param) = shift(param)
-chiparam(blk::PhaseGate, param) = phase(param)
-chiparam(blk::TimeEvolution, param) = time_evolve(blk.H, param, tol=blk.tol)
-chiparam(blk::AbstractBlock, params...) = niparams(blk) == length(params) == 0 ? blk : NotImplementedError(chiparam, blk, params...)
-SymEngine.subs(blk::AbstractBlock, args...; kwargs...) = subs(Basic, blk, args...; kwargs...)
-SymEngine.subs(::Type{T}, blk::RotationGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
-SymEngine.subs(::Type{T}, blk::ShiftGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
-SymEngine.subs(::Type{T}, blk::ShiftGate, args...; kwargs...) where T = rot(blk.block, T(subs(blk.theta, args...; kwargs...)))
-SymEngine.subs(::Type{T}, blk::TimeEvolution, args...; kwargs...) where T = time_evolve(blk.H, T(subs(blk.dt, args...; kwargs...)), tol=blk.tol)
-function SymEngine.subs(c::AbstractBlock, args...; kwargs...)
-    nparameters(c) == 0 && return c
-    if niparams(c) == 0
-        chsubblocks(c, [subs(blk, args..., kwargs...) for blk in subblocks(blk)])
-    else
-        throw(NotImplementedError(:subs, (c, args...)))
-    end
+export subs, chiparams
+chiparams(blk::RotationGate, param) = rot(blk.block, param)
+chiparams(blk::ShiftGate, param) = shift(param)
+chiparams(blk::PhaseGate, param) = phase(param)
+chiparams(blk::TimeEvolution, param) = time_evolve(blk.H, param, tol=blk.tol)
+chiparams(blk::AbstractBlock, params...) = niparams(blk) == length(params) == 0 ? blk : throw(NotImplementedError(:chiparams, (blk, params...)))
+
+SymEngine.subs(c::AbstractBlock, args...; kwargs...) = subs(Basic, c, args...; kwargs...)
+function SymEngine.subs(::Type{T}, c::AbstractBlock, args...; kwargs...) where T
+    c = chiparams(c, map(x->T(subs(x, args...; kwargs...)), getiparams(c))...)
+    chsubblocks(c, [subs(T, blk, args..., kwargs...) for blk in subblocks(c)])
 end
