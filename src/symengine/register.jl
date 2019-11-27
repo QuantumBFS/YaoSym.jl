@@ -5,7 +5,7 @@ export szero_state
 
 YaoArrayRegister._warn_type(raw::AbstractArray{Basic}) = nothing
 
-const SymReg{B, MT} = ArrayReg{B, Basic, MT}
+const SymReg{B, MT} = ArrayReg{B, Basic, MT} where {MT <:AbstractMatrix{Basic}}
 const AdjointSymReg{B, MT} = AdjointArrayReg{B, Basic, MT}
 const SymRegOrAdjointSymReg{B, MT} = Union{SymReg{B, MT}, AdjointSymReg{B, MT}}
 
@@ -36,3 +36,11 @@ Base.:(^)(x::AdjointSymReg{B, MT}, n::Int) where {B, MT} = adjoint(parent(x)^n)
 
 SymEngine.expand(x::SymReg{B}) where B = ArrayReg{B}(expand.(state(x)))
 szero_state(args...; kwargs...) = zero_state(Basic, args...; kwargs...)
+
+function YaoBase.partial_tr(r::SymReg{B}, locs) where B
+    orders = setdiff(1:nqubits(r), locs)
+    focus!(r, orders)
+    state = sum(rank3(r); dims=2)
+    relax!(r, orders)
+    return ArrayReg(state)
+end
