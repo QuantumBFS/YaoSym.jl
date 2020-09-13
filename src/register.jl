@@ -94,6 +94,8 @@ function print_basis(io, active::Int, remain::Int, r)
     end
 end
 
+print_amp(io::IO, x) = isone(x) || print(io, round(x; digits=2))
+
 function print_sym_state(io::IO, r::ArrayReg{1})
     st = state(r)
     m, n = size(st)
@@ -113,7 +115,7 @@ function print_sym_state(io::IO, r::ArrayReg{1})
         end
 
         isfirst_nonzero || print(io, " + ")
-        isone(amp) || print(io, st[i, j])
+        print_amp(io, amp)
         print_basis(io, i - 1, j - 1, r)
         isfirst_nonzero = false
     end
@@ -125,7 +127,7 @@ function print_sym_state(io::IO, r::AdjointArrayReg{1})
     isfirst_nonzero = true
     amp = st[1, 1]
     if !iszero(amp)
-        isone(amp) || print(io, amp)
+        print_amp(io, amp)
         print_basis(io, 0, 0, r)
         isfirst_nonzero = false
     end
@@ -138,7 +140,7 @@ function print_sym_state(io::IO, r::AdjointArrayReg{1})
         end
 
         isfirst_nonzero || print(io, " + ")
-        isone(amp) || print(io, st[i, j])
+        print_amp(io, amp)
         print_basis(io, j - 1, i - 1, r)
         isfirst_nonzero = false
     end
