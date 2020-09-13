@@ -11,5 +11,11 @@ end
     @test partial_tr(r, 2:3) == (α + β) * ket"1"
 end
 
-r = zero_state(3)
-SymReg(r)
+@testset "conversion" begin
+    r = zero_state(3)
+    sr = SymReg(r)
+
+    for i in eachindex(r.state)
+        @test r.state[i] ≈ N(sr.state[i])
+    end    
+end
