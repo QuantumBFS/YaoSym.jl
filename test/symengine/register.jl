@@ -1,4 +1,4 @@
-using Test, YaoSym, YaoBase
+using Test, YaoSym, YaoBase, YaoArrayRegister
 
 @testset "constructors" begin
     @test ket"011" isa SymReg
@@ -10,3 +10,6 @@ end
     r = α * ket"101" + β * ket"111"
     @test partial_tr(r, 2:3) == (α + β) * ket"1"
 end
+
+r = zero_state(3)
+SymReg(r)

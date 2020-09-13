@@ -94,7 +94,15 @@ function print_basis(io, active::Int, remain::Int, r)
     end
 end
 
-print_amp(io::IO, x) = isone(x) || print(io, round(x; digits=2))
+function print_amp(io::IO, x)
+    if !isone(x)
+        if isempty(free_symbols(x))
+            print(io, round(N(x); digits=2))
+        else
+            print(io, x)
+        end
+    end
+end
 
 function print_sym_state(io::IO, r::ArrayReg{1})
     st = state(r)
@@ -102,7 +110,7 @@ function print_sym_state(io::IO, r::ArrayReg{1})
     isfirst_nonzero = true
     amp = st[1, 1]
     if !iszero(amp)
-        isone(amp) || print(io, amp)
+        print_amp(io, amp)
         print_basis(io, 0, 0, r)
         isfirst_nonzero = false
     end
